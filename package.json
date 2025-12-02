@@ -1,5 +1,5 @@
 {
-  "name": "eisc-video",
+  "name": "Agorax_video",
   "version": "0.1.0",
   "scripts": {
     "dev": "tsx watch api/index.ts",
