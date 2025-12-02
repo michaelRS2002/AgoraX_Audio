@@ -29,11 +29,19 @@ io.on("connection", socket => {
   console.log(`User connected: ${socket.id}`);
 
   // ─────────────────────────────────────────────
-  // JOIN ROOM
+  // JOIN ROOM (LIMIT 10 USERS)
   // ─────────────────────────────────────────────
   socket.on("join-voice-room", (roomId: string) => {
+
     if (!rooms[roomId]) {
       rooms[roomId] = { users: [] };
+    }
+
+    // ⛔ LIMIT 10 USERS
+    if (rooms[roomId].users.length >= 10) {
+      console.log(`Room ${roomId} is full`);
+      socket.emit("room-full", { roomId, max: 10 });
+      return;
     }
 
     rooms[roomId].users.push(socket.id);
@@ -94,4 +102,6 @@ io.on("connection", socket => {
     }
   });
 });
+
+
 
