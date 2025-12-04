@@ -10,7 +10,7 @@ const io = new Server({
 const port = Number(process.env.PORT) || 4000;
 
 io.listen(port);
-console.log(`Voice Signaling Server running on port ${port}`);
+// Signaling server (console output removed)
 
 /**
  * Rooms structure:
@@ -26,7 +26,7 @@ const rooms: Record<string, { users: string[] }> = {};
 //  CONNECTION
 // ─────────────────────────────────────────────
 io.on("connection", socket => {
-  console.log(`User connected: ${socket.id}`);
+  // connection established
 
   // ─────────────────────────────────────────────
   // JOIN ROOM (LIMIT 10 USERS)
@@ -39,18 +39,78 @@ io.on("connection", socket => {
 
     // ⛔ LIMIT 10 USERS
     if (rooms[roomId].users.length >= 10) {
-      console.log(`Room ${roomId} is full`);
       socket.emit("room-full", { roomId, max: 10 });
       return;
     }
 
-    rooms[roomId].users.push(socket.id);
+    // Only add if not already present (avoid duplicate entries if client fires join multiple times)
+    let added = false;
+    if (!rooms[roomId].users.includes(socket.id)) {
+      rooms[roomId].users.push(socket.id);
+      added = true;
+    } else {
+      // duplicate join ignored
+    }
+
     socket.join(roomId);
 
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    // Notify others only if this was a new entry
+    if (added) {
+      socket.to(roomId).emit("user-joined", socket.id);
+    }
+  });
 
-    // Notifica a los demás usuarios de la sala
-    socket.to(roomId).emit("user-joined", socket.id);
+  // ─────────────────────────────────────────────
+  // LEAVE ROOM (explicit)
+  // ─────────────────────────────────────────────
+  socket.on("leave-voice-room", (roomId: string) => {
+    try {
+      socket.leave(roomId);
+      if (rooms[roomId]) {
+        rooms[roomId].users = rooms[roomId].users.filter(u => u !== socket.id);
+        io.to(roomId).emit("user-left", socket.id);
+
+        if (rooms[roomId].users.length === 0) {
+          // room now empty: trigger backend finalize for this room
+          (async () => {
+            try {
+                // Prefer an explicit RESUME service if configured (new migrated summary service).
+                const resume = process.env.RESUME_BASE;
+                const tryFinalize = async (base: string) => {
+                  const url = `${base.replace(/\/+$/,'')}/api/audio/finalize?roomId=${encodeURIComponent(roomId)}`;
+                  const resp = await fetch(url, { method: 'POST' as any });
+                  try {
+                    await resp.json();
+                  } catch (e) {
+                    await resp.text();
+                  }
+                  return resp;
+                };
+
+                // If RESUME_BASE is set, try it first and fall back to BACKEND_BASE on failure.
+                if (resume) {
+                  try {
+                    const resp = await tryFinalize(resume);
+                    if (!resp.ok) {
+                      await tryFinalize(backend);
+                    }
+                  } catch (e) {
+                    try { await tryFinalize(backend); } catch (e2) { }
+                  }
+                } else {
+                  await tryFinalize(backend);
+                }
+              } catch (err) {
+                // finalize failed
+              }
+          })();
+
+          delete rooms[roomId];
+        }
+      }
+    } catch (e) {
+      // leave error
+    }
   });
 
   // ─────────────────────────────────────────────
@@ -89,7 +149,7 @@ io.on("connection", socket => {
   // DISCONNECT
   // ─────────────────────────────────────────────
   socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+    // user disconnected
 
     // Eliminar de las rooms
     for (const roomId in rooms) {
@@ -97,6 +157,30 @@ io.on("connection", socket => {
       io.to(roomId).emit("user-left", socket.id);
 
       if (rooms[roomId].users.length === 0) {
+        // room now empty: trigger backend finalize for this room
+        (async () => {
+          try {
+            const resume = process.env.RESUME_BASE;
+            if (resume) {
+              try {
+                const url = `${resume.replace(/\/+$/,'')}/api/audio/finalize?roomId=${encodeURIComponent(roomId)}`;
+                const resp = await fetch(url, { method: 'POST' as any });
+                try {
+                  await resp.json();
+                } catch (e) {
+                  await resp.text();
+                }
+              } catch (e) {
+                // resume finalize failed
+              }
+            } else {
+              // RESUME_BASE not configured; skipping finalize
+            }
+          } catch (err) {
+            // failed to call backend finalize
+          }
+        })();
+
         delete rooms[roomId];
       }
     }
