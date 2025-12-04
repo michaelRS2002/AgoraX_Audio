@@ -12,6 +12,18 @@ const port = Number(process.env.PORT) || 4000;
 io.listen(port);
 // Signaling server (console output removed)
 
+// Friendly startup log: show configured origin and port
+{
+  const rawOrigin = process.env.DIR || '';
+  const origin = (rawOrigin.split && rawOrigin.split(',')[0]) ? String(rawOrigin.split(',')[0]).trim() : rawOrigin || 'http://localhost';
+  if (port === 0) {
+    console.log(`Servicio de audio funcionando en ${origin}`);
+  } else {
+    console.log(`Servicio de audio funcionando en ${origin}:${port}`);
+  }
+}
+
+
 /**
  * Rooms structure:
  * rooms = {
@@ -87,18 +99,15 @@ io.on("connection", socket => {
                   return resp;
                 };
 
-                // If RESUME_BASE is set, try it first and fall back to BACKEND_BASE on failure.
+                // If RESUME_BASE is set, call it; otherwise skip finalize (we no longer call legacy backend)
                 if (resume) {
                   try {
-                    const resp = await tryFinalize(resume);
-                    if (!resp.ok) {
-                      await tryFinalize(backend);
-                    }
+                    await tryFinalize(resume);
                   } catch (e) {
-                    try { await tryFinalize(backend); } catch (e2) { }
+                    // resume finalize failed; nothing else to do
                   }
                 } else {
-                  await tryFinalize(backend);
+                  // no RESUME_BASE configured; skipping finalize
                 }
               } catch (err) {
                 // finalize failed
