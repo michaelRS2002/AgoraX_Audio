@@ -16,7 +16,7 @@ io.listen(port);
 {
   const rawOrigin = process.env.DIR || '';
   const origin = (rawOrigin.split && rawOrigin.split(',')[0]) ? String(rawOrigin.split(',')[0]).trim() : rawOrigin || 'http://localhost';
-  if (port === 0) {
+  if (port == 0) {
     console.log(`Servicio de audio funcionando en ${origin}`);
   } else {
     console.log(`Servicio de audio funcionando en ${origin}:${port}`);
