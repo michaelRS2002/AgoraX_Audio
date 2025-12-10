@@ -413,16 +413,14 @@ Las contribuciones son bienvenidas. Por favor:
 
 ---
 
-## 📄 Licencia
-
-Este proyecto está bajo la licencia ISC. Ver archivo `LICENSE` para más detalles.
-
----
-
 ## 👥 Autores
 
 **Equipo AgoraX**
 - GitHub: [@michaelRS2002](https://github.com/michaelRS2002)
+- Github: [@AirWa1l](https://github.com/AirWa1l)
+- Github: [@Mausterl26](https://github.com/Mausterl26)
+- Github: [@LjuandalZPH](https://github.com/LjuandalZPH)
+- Github: [@vilhood](https://github.com/vilhood)
 
 ---
 
@@ -431,19 +429,6 @@ Este proyecto está bajo la licencia ISC. Ver archivo `LICENSE` para más detall
 Para reportar problemas o solicitar características:
 - **Issues**: [GitHub Issues](https://github.com/michaelRS2002/AgoraX_Audio/issues)
 - **Discusiones**: [GitHub Discussions](https://github.com/michaelRS2002/AgoraX_Audio/discussions)
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Implementar autenticación JWT
-- [ ] Agregar métricas y monitoring
-- [ ] Soporte para compartir pantalla
-- [ ] Grabación de audio en servidor
-- [ ] Sistema de moderadores por sala
-- [ ] API REST para gestión de salas
-- [ ] Tests unitarios y de integración
-- [ ] Documentación de API con Swagger/OpenAPI
 
 ---
 
